@@ -1,57 +1,93 @@
-import streamlit as st
+import json
+import ipywidgets as widgets
+from IPython.display import display, clear_output
 
-st.set_page_config(page_title="📋 ToDo List App", page_icon="✅")
-st.title("📋 ToDo List App")
+# Files
+done_file = "done_tasks.json"
 
-# Initialize task list and action flags
-if 'tasks' not in st.session_state:
-    st.session_state.tasks = []
-if 'action' not in st.session_state:
-    st.session_state.action = None
-if 'action_index' not in st.session_state:
-    st.session_state.action_index = None
+# Try to load saved tasks, or start fresh
+try:
+    with open("tasks.json", "r") as f:
+        tasks = json.load(f)
+except:
+    tasks = []
 
-# Add new task
-with st.form("Add task", clear_on_submit=True):
-    new_task = st.text_input("Enter new task")
-    submitted = st.form_submit_button("Add Task")
-    if submitted and new_task.strip():
-        st.session_state.tasks.append(new_task.strip())
+# Widgets
+task_input = widgets.Text(placeholder='Enter a task')
+add_button = widgets.Button(description="Add Task", button_style='success')
+delete_dropdown = widgets.Dropdown(options=[], description='Delete:')
+delete_button = widgets.Button(description="Delete", button_style='danger')
+done_dropdown = widgets.Dropdown(options=[], description='Done:')
+done_button = widgets.Button(description="Mark as Done", button_style='info')
+output = widgets.Output()
 
-st.subheader("✅ Current Tasks")
+def save_tasks():
+    with open("tasks.json", "w") as f:
+        json.dump(tasks, f)
 
-if st.session_state.tasks:
-    for i, task in enumerate(st.session_state.tasks):
-        cols = st.columns([7,1,1,1,1])
-        cols[0].markdown(f"**{i+1}. {task}**")
-        if cols[1].button("✅", key=f"done_{i}"):
-            st.session_state.action = 'done'
-            st.session_state.action_index = i
-        if cols[2].button("❌", key=f"delete_{i}"):
-            st.session_state.action = 'delete'
-            st.session_state.action_index = i
-        if cols[3].button("⬆️", key=f"up_{i}"):
-            st.session_state.action = 'up'
-            st.session_state.action_index = i
-        if cols[4].button("⬇️", key=f"down_{i}"):
-            st.session_state.action = 'down'
-            st.session_state.action_index = i
-else:
-    st.info("No tasks yet. Add one above!")
+def save_done_task(task_text):
+    try:
+        with open(done_file, "r") as f:
+            done_tasks = json.load(f)
+    except:
+        done_tasks = []
+    done_tasks.append(task_text)
+    with open(done_file, "w") as f:
+        json.dump(done_tasks, f)
 
-# Apply action outside the loop
-if st.session_state.action is not None:
-    idx = st.session_state.action_index
-    if st.session_state.action in ['done', 'delete']:
-        if 0 <= idx < len(st.session_state.tasks):
-            st.session_state.tasks.pop(idx)
-    elif st.session_state.action == 'up':
-        if idx > 0:
-            st.session_state.tasks[idx], st.session_state.tasks[idx-1] = st.session_state.tasks[idx-1], st.session_state.tasks[idx]
-    elif st.session_state.action == 'down':
-        if idx < len(st.session_state.tasks)-1:
-            st.session_state.tasks[idx], st.session_state.tasks[idx+1] = st.session_state.tasks[idx+1], st.session_state.tasks[idx]
-    # Reset action
-    st.session_state.action = None
-    st.session_state.action_index = None
-    st.experimental_rerun()
+def refresh_dropdowns():
+    delete_dropdown.options = tasks
+    done_dropdown.options = tasks
+
+def show_lists():
+    with output:
+        clear_output()
+        print("📋 ToDo List:")
+        if tasks:
+            for i, text in enumerate(tasks, 1):
+                print(f"{i}. {text}")
+        else:
+            print("No tasks yet.")
+
+def on_add_clicked(b):
+    text = task_input.value.strip()
+    if text:
+        tasks.append(text)
+        task_input.value = ''
+        save_tasks()
+        refresh_dropdowns()
+        show_lists()
+
+def on_delete_clicked(b):
+    if delete_dropdown.options:
+        index = delete_dropdown.index
+        tasks.pop(index)
+        save_tasks()
+        refresh_dropdowns()
+        show_lists()
+
+def on_done_clicked(b):
+    if done_dropdown.options:
+        index = done_dropdown.index
+        task = tasks.pop(index)
+        save_done_task(task)
+        save_tasks()
+        refresh_dropdowns()
+        show_lists()
+
+# Bind events
+add_button.on_click(on_add_clicked)
+delete_button.on_click(on_delete_clicked)
+done_button.on_click(on_done_clicked)
+
+# Display interface
+display(widgets.VBox([
+    widgets.HBox([task_input, add_button]),
+    widgets.HBox([delete_dropdown, delete_button]),
+    widgets.HBox([done_dropdown, done_button]),
+    output
+]))
+
+# Initial display
+refresh_dropdowns()
+show_lists()
