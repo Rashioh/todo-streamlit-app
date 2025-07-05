@@ -1,93 +1,50 @@
-import json
-import ipywidgets as widgets
-from IPython.display import display, clear_output
+import streamlit as st
 
-# Files
-done_file = "done_tasks.json"
+st.title("📋 ToDo List App")
 
-# Try to load saved tasks, or start fresh
-try:
-    with open("tasks.json", "r") as f:
-        tasks = json.load(f)
-except:
-    tasks = []
+# Initialize task list
+if 'tasks' not in st.session_state:
+    st.session_state.tasks = []
 
-# Widgets
-task_input = widgets.Text(placeholder='Enter a task')
-add_button = widgets.Button(description="Add Task", button_style='success')
-delete_dropdown = widgets.Dropdown(options=[], description='Delete:')
-delete_button = widgets.Button(description="Delete", button_style='danger')
-done_dropdown = widgets.Dropdown(options=[], description='Done:')
-done_button = widgets.Button(description="Mark as Done", button_style='info')
-output = widgets.Output()
+# Add new task
+with st.form("Add task"):
+    new_task = st.text_input("Enter new task:")
+    submitted = st.form_submit_button("Add Task")
+    if submitted and new_task.strip():
+        st.session_state.tasks.append(new_task.strip())
 
-def save_tasks():
-    with open("tasks.json", "w") as f:
-        json.dump(tasks, f)
+st.subheader("✅ Current Tasks")
 
-def save_done_task(task_text):
-    try:
-        with open(done_file, "r") as f:
-            done_tasks = json.load(f)
-    except:
-        done_tasks = []
-    done_tasks.append(task_text)
-    with open(done_file, "w") as f:
-        json.dump(done_tasks, f)
+# Track user actions
+action = None
+index = None
 
-def refresh_dropdowns():
-    delete_dropdown.options = tasks
-    done_dropdown.options = tasks
+if st.session_state.tasks:
+    for i, task in enumerate(st.session_state.tasks):
+        col1, col2, col3, col4, col5 = st.columns([6,1,1,1,1])
+        col1.markdown(f"**{i+1}. {task}**")
+        if col2.button("✅", key=f"done_{i}"):
+            action = 'done'
+            index = i
+        if col3.button("❌", key=f"delete_{i}"):
+            action = 'delete'
+            index = i
+        if col4.button("⬆️", key=f"up_{i}") and i > 0:
+            action = 'up'
+            index = i
+        if col5.button("⬇️", key=f"down_{i}") and i < len(st.session_state.tasks)-1:
+            action = 'down'
+            index = i
 
-def show_lists():
-    with output:
-        clear_output()
-        print("📋 ToDo List:")
-        if tasks:
-            for i, text in enumerate(tasks, 1):
-                print(f"{i}. {text}")
-        else:
-            print("No tasks yet.")
+    # Apply action *after* building UI
+    if action == 'done' or action == 'delete':
+        st.session_state.tasks.pop(index)
+    elif action == 'up':
+        st.session_state.tasks[index], st.session_state.tasks[index-1] = (
+            st.session_state.tasks[index-1], st.session_state.tasks[index])
+    elif action == 'down':
+        st.session_state.tasks[index], st.session_state.tasks[index+1] = (
+            st.session_state.tasks[index+1], st.session_state.tasks[index])
 
-def on_add_clicked(b):
-    text = task_input.value.strip()
-    if text:
-        tasks.append(text)
-        task_input.value = ''
-        save_tasks()
-        refresh_dropdowns()
-        show_lists()
-
-def on_delete_clicked(b):
-    if delete_dropdown.options:
-        index = delete_dropdown.index
-        tasks.pop(index)
-        save_tasks()
-        refresh_dropdowns()
-        show_lists()
-
-def on_done_clicked(b):
-    if done_dropdown.options:
-        index = done_dropdown.index
-        task = tasks.pop(index)
-        save_done_task(task)
-        save_tasks()
-        refresh_dropdowns()
-        show_lists()
-
-# Bind events
-add_button.on_click(on_add_clicked)
-delete_button.on_click(on_delete_clicked)
-done_button.on_click(on_done_clicked)
-
-# Display interface
-display(widgets.VBox([
-    widgets.HBox([task_input, add_button]),
-    widgets.HBox([delete_dropdown, delete_button]),
-    widgets.HBox([done_dropdown, done_button]),
-    output
-]))
-
-# Initial display
-refresh_dropdowns()
-show_lists()
+else:
+    st.info("No tasks yet. Add a task above!")
