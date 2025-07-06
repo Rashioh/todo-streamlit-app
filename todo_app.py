@@ -25,10 +25,6 @@ if 'tasks' not in st.session_state:
 if 'done_tasks' not in st.session_state:
     st.session_state.done_tasks = load_list(DONE_FILE)
 
-# Flags to trigger rerun
-if 'rerun' not in st.session_state:
-    st.session_state.rerun = False
-
 st.title("📋 Simple ToDo List App")
 
 # --- Add new task ---
@@ -37,7 +33,6 @@ if st.button("➕ Add Task"):
     if new_task.strip():
         st.session_state.tasks.append(new_task.strip())
         save_list(st.session_state.tasks, TASKS_FILE)
-        st.session_state.rerun = True
 
 # --- Show current tasks ---
 st.subheader("✅ Your Tasks")
@@ -50,11 +45,9 @@ if st.session_state.tasks:
             save_list(st.session_state.done_tasks, DONE_FILE)
             st.session_state.tasks.pop(i)
             save_list(st.session_state.tasks, TASKS_FILE)
-            st.session_state.rerun = True
         if col3.button("❌", key=f"del_{i}"):
             st.session_state.tasks.pop(i)
             save_list(st.session_state.tasks, TASKS_FILE)
-            st.session_state.rerun = True
 else:
     st.info("No tasks yet. Add one above!")
 
@@ -67,8 +60,3 @@ else:
     st.write("No tasks marked as done yet.")
 
 st.caption("✨ Simple web ToDo list built with Streamlit")
-
-# --- Safe rerun ---
-if st.session_state.rerun:
-    st.session_state.rerun = False
-    st.experimental_rerun()
