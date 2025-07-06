@@ -7,7 +7,7 @@ st.set_page_config(page_title="📋 ToDo List App", page_icon="✅")
 TASKS_FILE = "tasks.json"
 DONE_FILE = "done_tasks.json"
 
-# Load & save functions
+# --- Load & save functions ---
 def load_list(file):
     if os.path.exists(file):
         with open(file, "r") as f:
@@ -18,7 +18,7 @@ def save_list(lst, file):
     with open(file, "w") as f:
         json.dump(lst, f)
 
-# Initialize
+# --- Initialize lists ---
 if 'tasks' not in st.session_state:
     st.session_state.tasks = load_list(TASKS_FILE)
 if 'done_tasks' not in st.session_state:
@@ -50,7 +50,7 @@ if st.session_state.tasks:
     )
     col_done, col_del = st.columns(2)
     if col_done.button("✅ Mark as Done"):
-        # Move to done
+        # Move to done list and remove from current tasks
         st.session_state.done_tasks.append(selected_task)
         save_list(st.session_state.done_tasks, DONE_FILE)
         st.session_state.tasks.remove(selected_task)
@@ -60,7 +60,7 @@ if st.session_state.tasks:
         save_list(st.session_state.tasks, TASKS_FILE)
 
 # --- Show done tasks ---
-st.subheader("✅ Done Tasks")
+st.subheader("🎉 Done Tasks")
 if st.session_state.done_tasks:
     for j, task in enumerate(st.session_state.done_tasks, 1):
         st.write(f"{j}. {task}")
