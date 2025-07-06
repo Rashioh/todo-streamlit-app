@@ -63,7 +63,12 @@ if st.session_state.tasks:
 st.subheader("🎉 Done Tasks")
 if st.session_state.done_tasks:
     for i, task in enumerate(st.session_state.done_tasks, 1):
-        st.write(f"{i}. {task}")
+        st.markdown(f"{i}. {task}")
+    # Select done task to delete
+    selected_done_task = st.selectbox("Select done task to delete:", options=st.session_state.done_tasks, key="done_task_select")
+    if st.button("🗑️ Delete from Done"):
+        st.session_state.done_tasks.remove(selected_done_task)
+        save_list(st.session_state.done_tasks, DONE_FILE)
 else:
     st.write("No tasks marked as done yet.")
 
