@@ -7,19 +7,18 @@ st.set_page_config(page_title="📋 ToDo List App", page_icon="✅")
 TASKS_FILE = "tasks.json"
 DONE_FILE = "done_tasks.json"
 
-# Load tasks
+# Load & save functions
 def load_list(file):
     if os.path.exists(file):
         with open(file, "r") as f:
             return json.load(f)
     return []
 
-# Save tasks
 def save_list(lst, file):
     with open(file, "w") as f:
         json.dump(lst, f)
 
-# Initialize lists
+# Initialize
 if 'tasks' not in st.session_state:
     st.session_state.tasks = load_list(TASKS_FILE)
 if 'done_tasks' not in st.session_state:
@@ -37,19 +36,28 @@ if st.button("➕ Add Task"):
 # --- Show current tasks ---
 st.subheader("✅ Your Tasks")
 if st.session_state.tasks:
-    for i, task in enumerate(st.session_state.tasks):
-        col1, col2, col3 = st.columns([6,1,1])
-        col1.markdown(f"**{i+1}. {task}**")
-        if col2.button("✅", key=f"done_{i}"):
-            st.session_state.done_tasks.append(task)
-            save_list(st.session_state.done_tasks, DONE_FILE)
-            st.session_state.tasks.pop(i)
-            save_list(st.session_state.tasks, TASKS_FILE)
-        if col3.button("❌", key=f"del_{i}"):
-            st.session_state.tasks.pop(i)
-            save_list(st.session_state.tasks, TASKS_FILE)
+    for i, task in enumerate(st.session_state.tasks, 1):
+        st.markdown(f"**{i}. {task}**")
 else:
     st.info("No tasks yet. Add one above!")
+
+# --- Select and edit ---
+if st.session_state.tasks:
+    st.subheader("✏️ Edit Tasks")
+    selected_task = st.selectbox(
+        "Select task to edit:",
+        options=st.session_state.tasks
+    )
+    col_done, col_del = st.columns(2)
+    if col_done.button("✅ Mark as Done"):
+        # Move to done
+        st.session_state.done_tasks.append(selected_task)
+        save_list(st.session_state.done_tasks, DONE_FILE)
+        st.session_state.tasks.remove(selected_task)
+        save_list(st.session_state.tasks, TASKS_FILE)
+    if col_del.button("❌ Delete Task"):
+        st.session_state.tasks.remove(selected_task)
+        save_list(st.session_state.tasks, TASKS_FILE)
 
 # --- Show done tasks ---
 st.subheader("✅ Done Tasks")
