@@ -51,12 +51,17 @@ if st.session_state.tasks:
         save_list(st.session_state.done_tasks, DONE_FILE)
         st.session_state.tasks.remove(selected_task)
         save_list(st.session_state.tasks, TASKS_FILE)
-        st.experimental_rerun()  # Refresh UI
-    
+        # Instead of st.experimental_rerun(), set a flag
+        st.session_state['action_taken'] = True
+
     if col_del.button("❌ Delete Task"):
         st.session_state.tasks.remove(selected_task)
         save_list(st.session_state.tasks, TASKS_FILE)
-        st.experimental_rerun()  # Refresh UI
+        st.session_state['action_taken'] = True
+
+if st.session_state.get('action_taken'):
+    st.session_state['action_taken'] = False
+    st.experimental_rerun()
 
 # Show done tasks
 st.subheader("🎉 Done Tasks")
